@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результат поиска</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Результат поиска</h1>
+        {% if message %}
+            <p class="text-danger text-center mt-4">{{ message }}</p>
+        {% else %}
+            <div class="card text-center mt-4">
+                <div class="card-body">
+                    <h2 class="card-title">Лучший банк: <strong>{{ bank }}</strong></h2>
+                    <p class="card-text">Категория: <strong>{{ category }}</strong></p>
+                    <p class="card-text">Кешбэк: <strong>{{ cashback }}%</strong></p>
+                </div>
+            </div>
+        {% endif %}
+        <div class="text-center mt-4">
+            <a href="/search" class="btn btn-primary">Вернуться к поиску</a>
+            <a href="/" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+</body>
+</html>

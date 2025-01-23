@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Категории кешбэка</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Категории кешбэка</h1>
+        <div class="accordion mt-4" id="banksAccordion">
+            {% for bank, categories in categories.items() %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
+                            {{ bank }}
+                        </button>
+                    </h2>
+                    <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ loop.index }}" data-bs-parent="#banksAccordion">
+                        <div class="accordion-body">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Категория</th>
+                                        <th>Кешбэк (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category, cashback in categories.items() %}
+                                        <tr>
+                                            <td>{{ category }}</td>
+                                            <td>{{ cashback }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+
+    <!-- Подключение Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

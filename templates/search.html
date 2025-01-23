@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск по торговой точке</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Поиск по торговой точке</h1>
+        <form action="/search" method="post" class="mt-4">
+            {% if error %}
+                <p class="text-danger">{{ error }}</p>
+            {% endif %}
+            <div class="mb-3">
+                <label for="query" class="form-label">Введите название торговой точки:</label>
+                <input type="text" id="query" name="query" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Искать</button>
+        </form>
+    </div>
+</body>
+</html>
