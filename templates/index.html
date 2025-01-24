@@ -9,14 +9,19 @@
 <body>
     <div class="container mt-5">
         <h1 class="text-center">Добро пожаловать в MCC Cashback Manager</h1>
-        <p class="text-center">Выберите действие:</p>
-        <div class="d-grid gap-3 mt-4">
-            <a href="/search" class="btn btn-primary btn-lg">Поиск по торговой точке</a>
-            <a href="/view_categories" class="btn btn-secondary btn-lg">Просмотр категорий кешбэка</a>
-            <a href="/add_bank" class="btn btn-success btn-lg">Добавить банк</a>
-            <a href="/update_categories" class="btn btn-warning btn-lg">Обновить категории банка</a>
-            <a href="/delete_bank" class="btn btn-danger btn-lg">Удалить банк</a>
-        </div>
+        {% if username %}
+            <p class="text-center">Вы вошли как: <strong>{{ username }}</strong></p>
+            <div class="d-grid gap-3 mt-4">
+                <a href="/search" class="btn btn-primary btn-lg">Поиск по торговой точке</a>
+                <a href="/view_categories" class="btn btn-secondary btn-lg">Просмотр категорий кешбэка</a>
+                <a href="/add_bank" class="btn btn-success btn-lg">Добавить банк</a>
+                <a href="/update_categories" class="btn btn-warning btn-lg">Обновить категории банка</a>
+                <a href="/delete_bank" class="btn btn-danger btn-lg">Удалить банк</a>
+                <a href="/logout" class="btn btn-outline-dark btn-lg">Выйти</a>
+            </div>
+        {% else %}
+            <p class="text-center">Пожалуйста, <a href="/login">войдите</a> или <a href="/register">зарегистрируйтесь</a>.</p>
+        {% endif %}
     </div>
 </body>
 </html>

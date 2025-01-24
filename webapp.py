@@ -1,17 +1,27 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+from flask_sqlalchemy import SQLAlchemy
 import json
 import requests
 from bs4 import BeautifulSoup
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import timedelta
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)  # Срок действия сессии
+db = SQLAlchemy(app)
+
+# Модель пользователя
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    cashback_categories = db.Column(db.String, nullable=True)
 
 # Загрузка данных
 with open("all_mcc_categories.json", "r", encoding="utf-8") as f:
     all_mcc_categories = json.load(f)
-
-with open("cashback_categories.json", "r", encoding="utf-8") as f:
-    cashback_categories = json.load(f)
-
 
 def parse_range(mcc):
     """Парсит MCC-коды, включая диапазоны."""
@@ -19,7 +29,6 @@ def parse_range(mcc):
         start, end = map(int, mcc.split('-'))
         return range(start, end + 1)
     return [int(mcc)]
-
 
 def find_category(bank_data, mcc):
     """Находит категорию по MCC-коду."""
@@ -29,8 +38,7 @@ def find_category(bank_data, mcc):
                 return category
     return None
 
-
-def find_best_cashback(all_mcc_categories, cashback_categories, mcc):
+def find_best_cashback(all_mcc_categories, user_cashback_categories, mcc):
     """Находит лучший банк и категорию для заданного MCC."""
     best_bank = None
     best_category = None
@@ -38,17 +46,28 @@ def find_best_cashback(all_mcc_categories, cashback_categories, mcc):
 
     universal_categories = {"Все покупки", "На все покупки", "Любые покупки"}
 
+    # Проходим по всем банкам
     for bank, categories in all_mcc_categories.items():
-        category = find_category(categories, mcc)
-        if category and bank in cashback_categories:
-            cashback = cashback_categories[bank].get(category, 0)
-            if cashback > max_cashback:
-                max_cashback = cashback
-                best_bank = bank
-                best_category = category
+        # Собираем все категории, которые подходят для данного MCC
+        matching_categories = []
+        for category, mcc_list in categories.items():
+            for code in mcc_list:
+                if mcc in parse_range(code):
+                    matching_categories.append(category)
+                    break  # Если MCC найден в категории, переходим к следующей категории
 
+        # Если найдены подходящие категории, проверяем кешбэк
+        if matching_categories and bank in user_cashback_categories:
+            for category in matching_categories:
+                cashback = user_cashback_categories[bank].get(category, 0)
+                if cashback > max_cashback:
+                    max_cashback = cashback
+                    best_bank = bank
+                    best_category = category
+
+    # Если не найдено подходящих категорий, проверяем универсальные категории
     if not best_bank:
-        for bank, categories in cashback_categories.items():
+        for bank, categories in user_cashback_categories.items():
             for category, cashback in categories.items():
                 if category in universal_categories and cashback > max_cashback:
                     max_cashback = cashback
@@ -56,7 +75,6 @@ def find_best_cashback(all_mcc_categories, cashback_categories, mcc):
                     best_category = category
 
     return best_bank, best_category, max_cashback
-
 
 def get_mcc_from_site(query):
     """Ищет MCC-код для заданной торговой точки через сайт mcc-codes.ru."""
@@ -90,14 +108,52 @@ def get_mcc_from_site(query):
 
     return f"MCC-код для '{query}' не найден или имеет неверный формат."
 
-
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if 'username' in session:
+        return render_template('index.html', username=session['username'])
+    return redirect(url_for('login'))
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        remember = request.form.get('remember')  # Проверяем, выбран ли флажок "Запомнить меня"
+
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            session['username'] = username
+            if remember:  # Если флажок "Запомнить меня" выбран
+                session.permanent = True  # Делаем сессию постоянной
+            return redirect(url_for('index'))
+        else:
+            flash('Неверное имя пользователя или пароль')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Регистрация прошла успешно. Пожалуйста, войдите.')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('index'))
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
     if request.method == 'GET':
         return render_template('search.html')
 
@@ -110,7 +166,10 @@ def search():
     if isinstance(mcc_result, str):
         return render_template('search.html', error=mcc_result)
 
-    best_bank, best_category, max_cashback = find_best_cashback(all_mcc_categories, cashback_categories, mcc_result)
+    user = User.query.filter_by(username=session['username']).first()
+    user_cashback_categories = json.loads(user.cashback_categories) if user.cashback_categories else {}
+
+    best_bank, best_category, max_cashback = find_best_cashback(all_mcc_categories, user_cashback_categories, mcc_result)
 
     if best_bank:
         return render_template(
@@ -127,103 +186,105 @@ def search():
 
 @app.route('/view_categories', methods=['GET'])
 def view_categories():
-    """Отображает кешбэк-категории для каждого банка."""
-    # Передаем данные о банках и категориях напрямую в шаблон
-    return render_template('view_categories.html', categories=cashback_categories)
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.filter_by(username=session['username']).first()
+    user_cashback_categories = json.loads(user.cashback_categories) if user.cashback_categories else {}
+    return render_template('view_categories.html', categories=user_cashback_categories)
 
 @app.route('/add_bank', methods=['GET', 'POST'])
 def add_bank():
-    # Список банков из all_mcc_categories.json, которых нет в cashback_categories.json
-    available_banks = [bank for bank in all_mcc_categories.keys() if bank not in cashback_categories]
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.filter_by(username=session['username']).first()
+    user_cashback_categories = json.loads(user.cashback_categories) if user.cashback_categories else {}
+
+    available_banks = [bank for bank in all_mcc_categories.keys() if bank not in user_cashback_categories]
 
     if request.method == 'GET':
-        # Если нет доступных банков для добавления
         if not available_banks:
             return render_template('add_bank.html', error="Все поддерживаемые банки уже добавлены.")
         return render_template('add_bank.html', banks=available_banks)
 
     elif request.method == 'POST':
-        # Получаем выбранный банк из формы
         bank_name = request.form.get('bank_name')
         if not bank_name:
             return render_template('add_bank.html', error="Выберите банк.", banks=available_banks)
 
-        # Добавляем банк в cashback_categories
-        cashback_categories[bank_name] = {}
-        with open("cashback_categories.json", "w", encoding="utf-8") as f:
-            json.dump(cashback_categories, f, ensure_ascii=False, indent=4)
+        user_cashback_categories[bank_name] = {}
+        user.cashback_categories = json.dumps(user_cashback_categories)
+        db.session.commit()
 
         return render_template('add_bank.html', success=f"Банк '{bank_name}' успешно добавлен.", banks=available_banks)
 
 @app.route('/update_categories', methods=['GET', 'POST'])
 def update_categories():
-    """Обновление категорий кешбэка для банка."""
-    # Список доступных банков из cashback_categories
-    banks = list(cashback_categories.keys())
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.filter_by(username=session['username']).first()
+    user_cashback_categories = json.loads(user.cashback_categories) if user.cashback_categories else {}
+
+    banks = list(user_cashback_categories.keys())
 
     if request.method == 'GET':
-        # Если нет банков для обновления
         if not banks:
             return render_template('update_categories.html', error="Нет доступных банков для обновления.")
         return render_template('update_categories.html', banks=banks)
 
     elif request.method == 'POST':
-        # Получаем данные из формы
         bank_name = request.form.get('bank_name')
         category = request.form.get('category')
         cashback = request.form.get('cashback')
 
-        # Проверяем заполнение полей
         if not (bank_name and category and cashback):
             return render_template('update_categories.html', error="Заполните все поля.", banks=banks)
 
-        # Проверяем, что кешбэк — это число
         try:
             cashback = float(cashback)
         except ValueError:
             return render_template('update_categories.html', error="Кешбэк должен быть числом.", banks=banks)
 
-        # Обновляем данные банка
-        if bank_name in cashback_categories:
-            cashback_categories[bank_name][category] = cashback
-            # Сохраняем изменения
-            with open("cashback_categories.json", "w", encoding="utf-8") as f:
-                json.dump(cashback_categories, f, ensure_ascii=False, indent=4)
+        if bank_name in user_cashback_categories:
+            user_cashback_categories[bank_name][category] = cashback
+            user.cashback_categories = json.dumps(user_cashback_categories)
+            db.session.commit()
             return render_template('update_categories.html', success=f"Категория '{category}' обновлена для банка '{bank_name}'.", banks=banks)
         else:
             return render_template('update_categories.html', error=f"Банк '{bank_name}' не найден.", banks=banks)
 
 @app.route('/delete_bank', methods=['GET', 'POST'])
 def delete_bank():
-    """Удаление банка из списка."""
-    # Список доступных банков из cashback_categories
-    banks = list(cashback_categories.keys())
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.filter_by(username=session['username']).first()
+    user_cashback_categories = json.loads(user.cashback_categories) if user.cashback_categories else {}
+
+    banks = list(user_cashback_categories.keys())
 
     if request.method == 'GET':
-        # Если нет банков для удаления
         if not banks:
             return render_template('delete_bank.html', error="Нет доступных банков для удаления.")
         return render_template('delete_bank.html', banks=banks)
 
     elif request.method == 'POST':
-        # Получаем выбранный банк из формы
         bank_name = request.form.get('bank_name')
         if not bank_name:
             return render_template('delete_bank.html', error="Выберите банк для удаления.", banks=banks)
 
-        # Удаляем банк из cashback_categories
-        if bank_name in cashback_categories:
-            del cashback_categories[bank_name]
-            # Сохраняем изменения
-            with open("cashback_categories.json", "w", encoding="utf-8") as f:
-                json.dump(cashback_categories, f, ensure_ascii=False, indent=4)
-            banks = list(cashback_categories.keys())  # Обновляем список банков
+        if bank_name in user_cashback_categories:
+            del user_cashback_categories[bank_name]
+            user.cashback_categories = json.dumps(user_cashback_categories)
+            db.session.commit()
+            banks = list(user_cashback_categories.keys())
             return render_template('delete_bank.html', success=f"Банк '{bank_name}' успешно удалён.", banks=banks)
         else:
             return render_template('delete_bank.html', error=f"Банк '{bank_name}' не найден.", banks=banks)
 
-#if __name__ == '__main__':
-#    app.run(debug=True)
-
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=True)
