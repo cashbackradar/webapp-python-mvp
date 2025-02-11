@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск по торговой точке</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        .section-title {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .add-favorite-btn {
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .sortable-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sortable-list li {
+            cursor: grab;
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sortable-list li:active {
+            cursor: grabbing;
+        }
+
+        .move-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="section-title">Поиск по торговой точке</h1>
+        <form action="/search" method="post" class="mt-4">
+            {% if error %}
+                <p class="text-danger">{{ error }}</p>
+            {% endif %}
+            <div class="mb-3">
+                <label for="query" class="form-label">Введите название торговой точки:</label>
+                <input type="text" id="query" name="query" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Искать</button>
+        </form>
+
+        <!-- Избранное -->
+        <div class="mt-5">
+            <h2 class="section-title">Избранное</h2>
+            {% if favorites %}
+                <ul id="favoriteList" class="sortable-list">
+                    {% for favorite in favorites|sort(attribute='order') %}
+                        <li data-id="{{ favorite.id }}">
+                            <form action="/select_favorite" method="post" style="display:inline;">
+                                <input type="hidden" name="mcc" value="{{ favorite.mcc }}">
+                                <input type="hidden" name="store_name" value="{{ favorite.store_name }}">
+                                <button type="submit" class="btn btn-link">{{ favorite.store_name }}</button>
+                            </form>
+                            <div class="move-buttons">
+                                <a href="/edit_favorite/{{ favorite.id }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="/delete_favorite/{{ favorite.id }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>У вас пока нет избранных торговых точек.</p>
+            {% endif %}
+            
+            <!-- Кнопка "+ Добавить" -->
+            <div class="add-favorite-btn">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#favoritesModal">
+                    <i class="fas fa-plus"></i> Добавить
+                </button>
+            </div>
+        </div>
+
+        <!-- История поиска -->
+        <div class="history-section">
+            <div class="history-header d-flex align-items-center justify-content-between" onclick="toggleHistory()">
+                <h2 class="section-title mb-0">История поиска</h2>
+                <i id="historyIcon" class="fas fa-chevron-down ms-2" style="cursor: pointer;"></i>
+            </div>
+            <div id="historyContent" style="display: none;">
+                {% if 'search_history' in session and session['search_history'] %}
+                    {% for item in session['search_history'] %}
+                        {% set index = loop.index0 %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ item['store_name'] }}</h5>
+                                <p class="card-text">MCC-код: {{ item['mcc'] }}</p>
+                                <p class="card-text">Описание: {{ item['description'] }}</p>
+                                <div class="d-flex justify-content-between">
+                                    <form action="/select_store" method="post">
+                                        <input type="hidden" name="mcc" value="{{ item['mcc'] }}">
+                                        <input type="hidden" name="store_name" value="{{ item['store_name'] }}">
+                                        <input type="hidden" name="description" value="{{ item['description'] }}">
+                                        <button type="submit" class="btn btn-primary">Перейти к результатам</button>
+                                    </form>
+                                    <form action="/remove_from_history" method="post">
+                                        <input type="hidden" name="index" value="{{ index }}">
+                                        <button type="submit" class="btn btn-danger">Удалить</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>История поиска пуста.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Кнопка "На главную" -->
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления в избранное -->
+    <div class="modal fade" id="favoritesModal" tabindex="-1" aria-labelledby="favoritesModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="favoritesModalLabel">Добавить в избранное</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="/add_to_favorites" method="post">
+                        <div class="mb-3">
+                            <label for="store_name" class="form-label">Название торговой точки:</label>
+                            <input type="text" id="store_name" name="store_name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mcc" class="form-label">MCC-код:</label>
+                            <input type="text" id="mcc" name="mcc" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Добавить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключение jQuery и jQuery UI -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+    <script>
+        function toggleHistory() {
+            const historyContent = document.getElementById('historyContent');
+            const historyIcon = document.getElementById('historyIcon');
+            if (historyContent.style.display === 'none') {
+                historyContent.style.display = 'block';
+                historyIcon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            } else {
+                historyContent.style.display = 'none';
+                historyIcon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            }
+        }
+
+        $(function() {
+            $("#favoriteList").sortable({
+                update: function(event, ui) {
+                    let sortedIDs = $(this).sortable("toArray", { attribute: "data-id" });
+                    $.post("/update_favorites_order", { order: sortedIDs });
+                }
+            }).disableSelection();
+        });
+    </script>
+</body>
+</html>

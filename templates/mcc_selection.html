@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор MCC-кода</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Выберите MCC-код</h1>
+        {% if mcc_data %}
+            <form action="/process_mcc" method="post" class="mt-4">
+                <div class="mb-3">
+                    <label for="selected_mcc" class="form-label">Выберите торговую точку и MCC-код:</label>
+                    <select id="selected_mcc" name="selected_mcc" class="form-control" required>
+                        {% for item in mcc_data %}
+                            <option value="{{ item.mcc }}">{{ item.name }} - {{ item.mcc }} - {{ item.description }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Продолжить</button>
+            </form>
+        {% else %}
+            <p class="text-danger text-center mt-4">Нет доступных MCC-кодов для выбора.</p>
+        {% endif %}
+        <div class="text-center mt-4">
+            <a href="/search" class="btn btn-secondary">Назад</a>
+        </div>
+    </div>
+</body>
+</html>

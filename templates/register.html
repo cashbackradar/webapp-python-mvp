@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Регистрация</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form method="POST" class="mt-4">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Имя пользователя:</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль:</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">Зарегистрироваться</button>
+                    </div>
+                </form>
+                <p class="text-center mt-3">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор MCC-кода</title>
+</head>
+<body>
+    <!-- Вывод таблицы загруженных MCC-кодов -->
+    {{ table_html | safe }}
+
+    <h2>Выберите наиболее подходящую торговую точку</h2>
+    <form method="POST" action="{{ url_for('process_selected_mcc') }}">
+        {% for store in stores %}
+            <label>
+                <input type="radio" name="selected_mcc" value="{{ store[1] }}" required>
+                {{ store[0] }} (MCC: {{ store[1] }}, Подтверждений: {{ store[2] }})
+            </label><br>
+        {% endfor %}
+        <button type="submit">Выбрать</button>
+    </form>
+</body>
+</html>

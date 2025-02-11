@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактировать избранное</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Редактировать избранное</h1>
+        <form action="/edit_favorite/{{ favorite.id }}" method="post" class="mt-4">
+            <div class="mb-3">
+                <label for="store_name" class="form-label">Название торговой точки:</label>
+                <input type="text" id="store_name" name="store_name" class="form-control" value="{{ favorite.store_name }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="mcc" class="form-label">MCC-код:</label>
+                <input type="text" id="mcc" name="mcc" class="form-control" value="{{ favorite.mcc }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <a href="/search" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
+</body>
+</html>
