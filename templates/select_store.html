@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор торговой точки</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Выберите торговую точку</h1>
+        <form action="/select_store" method="post" class="mt-4">
+            <input type="hidden" name="query" value="{{ query }}">  <!-- Передаем исходный запрос пользователя -->
+            {% for store in stores %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ store['Название точки'] }}</h5>
+                        <p class="card-text">MCC-код: {{ store['mcc'] }}</p>
+                        <p class="card-text">Описание: {{ store['Описание'] if store['Описание'] else "Описание не найдено" }}</p>
+                        <input type="hidden" name="store_name" value="{{ store['Название точки'] }}">
+                        <input type="hidden" name="description" value="{{ store['Описание'] }}">
+                        <button type="submit" name="mcc" value="{{ store['mcc'] }}" class="btn btn-primary">Выбрать</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </form>
+        <div class="text-center mt-4">
+            <a href="/search" class="btn btn-secondary">Вернуться к поиску</a>
+            <a href="/" class="btn btn-secondary">На главную</a>
+        </div>
+    </div>
+</body>
+</html>

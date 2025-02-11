@@ -14,10 +14,20 @@
         {% else %}
             <div class="card text-center mt-4">
                 <div class="card-body">
+                    <h2 class="card-title">Торговая точка: <strong>{{ store_name }}</strong></h2>
                     <h2 class="card-title">Лучший банк: <strong>{{ bank }}</strong></h2>
                     <p class="card-text">Категория: <strong>{{ category }}</strong></p>
                     <p class="card-text">Кешбэк: <strong>{{ cashback }}%</strong></p>
+                    <p class="card-text">MCC-код: <strong>{{ mcc }}</strong></p>
                 </div>
+            </div>
+            <!-- Кнопка "Добавить в избранное" -->
+            <div class="text-center mt-4">
+                <form action="/add_to_favorites" method="post">
+                    <input type="hidden" name="store_name" value="{{ store_name }}">
+                    <input type="hidden" name="mcc" value="{{ mcc }}">
+                    <button type="submit" class="btn btn-success">Добавить в избранное</button>
+                </form>
             </div>
         {% endif %}
         <div class="text-center mt-4">

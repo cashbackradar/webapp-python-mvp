@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCC Cashback Manager</title>
+    <title>RADAR Cashback</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        .app-version {
+            font-size: 0.9rem;
+            color: gray;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="text-center">Добро пожаловать в MCC Cashback Manager</h1>
+        <h1 class="text-center">Добро пожаловать в RADAR Cashback</h1>
         {% if username %}
             <p class="text-center">Вы вошли как: <strong>{{ username }}</strong></p>
             <div class="d-grid gap-3 mt-4">
@@ -22,6 +30,9 @@
         {% else %}
             <p class="text-center">Пожалуйста, <a href="/login">войдите</a> или <a href="/register">зарегистрируйтесь</a>.</p>
         {% endif %}
+
+        <!-- Версия приложения -->
+        <p class="app-version">Версия сайта: {{ app_version }}</p>
     </div>
 </body>
 </html>

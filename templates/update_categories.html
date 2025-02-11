@@ -5,42 +5,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Обновить категории банка</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        .dropdown-container {
+            position: relative;
+        }
+
+        #category_select {
+            display: none; /* Прячем стандартный выпадающий список */
+            position: absolute;
+            width: 100%;
+            background: white;
+            border: 1px solid #ced4da;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        #category_select option {
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        #category_select option:hover {
+            background: #f8f9fa;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="text-center">Обновить категории банка</h1>
-        <form action="/update_categories" method="post" class="mt-4">
-            {% if error %}
-                <p class="text-danger">{{ error }}</p>
-            {% endif %}
-            {% if success %}
-                <p class="text-success">{{ success }}</p>
-            {% endif %}
-            {% if banks %}
-                <div class="mb-3">
-                    <label for="bank_name" class="form-label">Выберите банк:</label>
-                    <select id="bank_name" name="bank_name" class="form-select" required>
-                        {% for bank in banks %}
-                            <option value="{{ bank }}">{{ bank }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="category" class="form-label">Категория:</label>
-                    <input type="text" id="category" name="category" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label for="cashback" class="form-label">Кешбэк (%):</label>
-                    <input type="number" step="0.01" id="cashback" name="cashback" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-warning">Обновить</button>
-            {% else %}
-                <p class="text-warning">Нет доступных банков для обновления.</p>
-            {% endif %}
+
+        <!-- Форма выбора банка -->
+        <form method="get" action="/update_categories" class="mb-4">
+            <div class="mb-3">
+                <label for="bank_select" class="form-label">Выберите банк:</label>
+                <select id="bank_select" name="bank" class="form-select" onchange="this.form.submit()">
+                    <option value="" disabled selected>-- Выберите банк --</option>
+                    {% for bank in banks %}
+                        <option value="{{ bank }}" {% if selected_bank == bank %}selected{% endif %}>{{ bank }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </form>
+
+        {% if selected_bank %}
+        <h2>Категории для банка: {{ selected_bank }}</h2>
+        
+        <!-- Список существующих категорий -->
+        <ul class="list-group mb-4">
+            {% for category, cashback in categories.items() %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ category }}: {{ cashback }}%
+                    <form method="post" action="/update_categories" class="d-inline">
+                        <input type="hidden" name="action" value="delete_category">
+                        <input type="hidden" name="bank_name" value="{{ selected_bank }}">
+                        <input type="hidden" name="category" value="{{ category }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Форма добавления/обновления категории -->
+        <form method="post" action="/update_categories">
+            <input type="hidden" name="action" value="update_or_add">
+            <input type="hidden" name="bank_name" value="{{ selected_bank }}">
+
+            <div class="mb-3 dropdown-container">
+                <label for="category_search" class="form-label">Выберите категорию:</label>
+                <input type="text" id="category_search" class="form-control" placeholder="Поиск категории..." autocomplete="off">
+                <select id="category_select" size="6">
+                    {% for category in available_categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <input type="hidden" id="selected_category" name="category">
+
+            <div class="mb-3">
+                <label for="new_cashback" class="form-label">Кешбэк (%):</label>
+                <input type="number" step="0.01" id="new_cashback" name="cashback" class="form-control" placeholder="Введите процент кешбэка" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Добавить/Обновить</button>
+        </form>
+        {% else %}
+        <p class="text-warning">Выберите банк для редактирования категорий.</p>
+        {% endif %}
+        
         <div class="text-center mt-4">
             <a href="/" class="btn btn-secondary">На главную</a>
         </div>
     </div>
+
+    <script>
+        $(document).ready(function () {
+            let categorySearch = $("#category_search");
+            let categorySelect = $("#category_select");
+            let selectedCategoryInput = $("#selected_category");
+
+            // Показываем список при фокусе
+            categorySearch.on("focus", function () {
+                categorySelect.show();
+            });
+
+            // Фильтрация категорий
+            categorySearch.on("input", function () {
+                let input = $(this).val().toLowerCase();
+                categorySelect.find("option").each(function () {
+                    let optionText = $(this).text().toLowerCase();
+                    $(this).toggle(optionText.includes(input));
+                });
+            });
+
+            // Выбор категории
+            categorySelect.on("change click", function () {
+                let selectedText = $(this).find("option:selected").text();
+                categorySearch.val(selectedText);
+                selectedCategoryInput.val(selectedText);
+                categorySelect.hide();
+            });
+
+            // Скрытие списка при клике вне
+            $(document).on("click", function (e) {
+                if (!$(e.target).closest(".dropdown-container").length) {
+                    categorySelect.hide();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
