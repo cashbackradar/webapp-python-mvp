@@ -93,11 +93,11 @@ def get_mcc_codes(store_name):
     all_data = []
     page = 1
     data_found = False  # Флаг для проверки наличия данных
-    
+
     while True:
         params = {"q": store_name, "extended": 0, "sortBy": "date", "sortDir": "desc", "page": page}
         response = requests.get(base_url, params=params, headers=headers)
-        
+
         if response.status_code != 200:
             print("Ошибка запроса:", response.status_code)
             return None
@@ -254,7 +254,7 @@ def search():
 
     # Преобразуем DataFrame в список словарей для передачи в шаблон
     stores = mcc_data.to_dict('records')
-    
+
     # Передаем название торговой точки в шаблон
     return render_template('select_store.html', stores=stores, query=query)  # Добавляем query
 
