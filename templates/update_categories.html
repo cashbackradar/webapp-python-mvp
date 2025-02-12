@@ -106,8 +106,13 @@
             let categorySelect = $("#category_select");
             let selectedCategoryInput = $("#selected_category");
 
-            // Показываем список при фокусе
-            categorySearch.on("focus", function () {
+            // Показываем список при фокусе или клике (для мобильных устройств)
+            categorySearch.on("focus click", function () {
+                categorySelect.show();
+            });
+
+            // Показываем список при касании (для мобильных устройств)
+            categorySearch.on("touchstart", function () {
                 categorySelect.show();
             });
 
@@ -129,7 +134,7 @@
             });
 
             // Скрытие списка при клике вне
-            $(document).on("click", function (e) {
+            $(document).on("click touchstart", function (e) {
                 if (!$(e.target).closest(".dropdown-container").length) {
                     categorySelect.hide();
                 }
