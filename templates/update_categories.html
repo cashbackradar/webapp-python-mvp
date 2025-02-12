@@ -21,6 +21,7 @@
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
+            top: 100%; /* Список будет отображаться под полем ввода */
         }
 
         #category_select option {
@@ -30,6 +31,15 @@
 
         #category_select option:hover {
             background: #f8f9fa;
+        }
+
+        /* Дополнительные стили для мобильных устройств */
+        @media (max-width: 768px) {
+            #category_select {
+                max-height: 150px; /* Уменьшаем высоту для мобильных устройств */
+                top: auto; /* Список будет отображаться выше клавиатуры */
+                bottom: 100%; /* Список будет отображаться над полем ввода */
+            }
         }
     </style>
 </head>
@@ -106,13 +116,14 @@
             let categorySelect = $("#category_select");
             let selectedCategoryInput = $("#selected_category");
 
-            // Показываем список при фокусе или клике (для мобильных устройств)
+            // Показываем список при фокусе или клике (для десктопов)
             categorySearch.on("focus click", function () {
                 categorySelect.show();
             });
 
             // Показываем список при касании (для мобильных устройств)
-            categorySearch.on("touchstart", function () {
+            categorySearch.on("touchstart", function (e) {
+                e.preventDefault(); // Предотвращаем стандартное поведение
                 categorySelect.show();
             });
 
